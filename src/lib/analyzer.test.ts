@@ -33,9 +33,9 @@ describe('FlakyTestAnalyzer', () => {
     const results = analyzer.analyze(10);
 
     expect(results).toHaveLength(1);
-    expect(results[0].testName).toBe('test example');
-    expect(results[0].failureCount).toBe(2);
-    expect(results[0].failureRate).toBe(0.2);
+    expect(results[0]?.testName).toBe('test example');
+    expect(results[0]?.failureCount).toBe(2);
+    expect(results[0]?.failureRate).toBe(0.2);
   });
 
   it('should not mark tests as flaky with only one failure', () => {
