@@ -8,9 +8,17 @@ export class GitHubClient {
     private owner: string,
     private repo: string
   ) {
+    const token = process.env.GITHUB_TOKEN;
+
     this.client = new Octokit({
-      auth: process.env.GITHUB_TOKEN,
+      auth: token,
     });
+
+    if (!token) {
+      console.warn('⚠️  No GITHUB_TOKEN found in environment variables.');
+      console.warn('   Some operations may be limited or fail.');
+      console.warn('   Set GITHUB_TOKEN in your .env file for full access.');
+    }
   }
 
   async getWorkflowRuns(days: number): Promise<WorkflowRun[]> {
@@ -54,9 +62,10 @@ export class GitHubClient {
       }
 
       // Handle case where data might be a different format
-      return Buffer.from(response.data as any);
-    } catch (error: any) {
-      if (error.status === 410) {
+      return Buffer.from(response.data as ArrayBuffer);
+    } catch (error) {
+      const octokitError = error as { status?: number; message?: string };
+      if (octokitError.status === 410) {
         // Logs have been deleted (common for old runs)
         console.warn(`Logs for run ${runId} are no longer available`);
       } else {

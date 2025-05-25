@@ -48,9 +48,29 @@ Tidybot:
 ## Requirements
 
 - Node.js 18+
-- For analyzing workflow logs, you need:
-  - Public repositories: Admin access to the repository
-  - Private repositories: Authentication with appropriate permissions
+- GitHub Personal Access Token (required for accessing workflow logs)
+
+## Setup
+
+1. Create a `.env` file in the project root:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Add your GitHub token to the `.env` file:
+
+   ```
+   GITHUB_TOKEN=your_github_token_here
+   ```
+
+3. Create a GitHub Personal Access Token:
+   - Go to https://github.com/settings/tokens
+   - Click "Generate new token (classic)"
+   - Select scopes:
+     - `repo` (for private repositories)
+     - `public_repo` (for public repositories only)
+   - Copy the token and add it to your `.env` file
 
 ## Limitations
 
