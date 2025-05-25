@@ -1,18 +1,15 @@
-import axios, { AxiosInstance } from 'axios';
+import { Octokit } from '@octokit/rest';
 import { WorkflowRun } from '../types';
 
 export class GitHubClient {
-  private client: AxiosInstance;
+  private client: Octokit;
 
   constructor(
     private owner: string,
     private repo: string
   ) {
-    this.client = axios.create({
-      baseURL: 'https://api.github.com',
-      headers: {
-        Accept: 'application/vnd.github.v3+json',
-      },
+    this.client = new Octokit({
+      auth: process.env.GITHUB_TOKEN,
     });
   }
 
@@ -20,31 +17,46 @@ export class GitHubClient {
     const since = new Date();
     since.setDate(since.getDate() - days);
 
-    const response = await this.client.get(`/repos/${this.owner}/${this.repo}/actions/runs`, {
-      params: {
-        created: `>=${since.toISOString()}`,
-        per_page: 100,
-      },
+    const response = await this.client.rest.actions.listWorkflowRunsForRepo({
+      owner: this.owner,
+      repo: this.repo,
+      created: `>=${since.toISOString()}`,
+      per_page: 100,
     });
 
-    return response.data.workflow_runs;
+    // Map Octokit response to our WorkflowRun interface
+    return response.data.workflow_runs.map(
+      (run): WorkflowRun => ({
+        id: run.id,
+        name: run.name || '',
+        head_branch: run.head_branch || '',
+        head_sha: run.head_sha,
+        status: run.status || '',
+        conclusion: run.conclusion,
+        created_at: run.created_at,
+        updated_at: run.updated_at,
+        html_url: run.html_url,
+      })
+    );
   }
 
   async getWorkflowRunLogs(runId: number): Promise<Buffer | null> {
     try {
-      const response = await this.client.get(
-        `/repos/${this.owner}/${this.repo}/actions/runs/${runId}/logs`,
-        {
-          responseType: 'arraybuffer',
-          headers: {
-            Accept: 'application/vnd.github.v3+json',
-          },
-        }
-      );
+      const response = await this.client.rest.actions.downloadWorkflowRunLogs({
+        owner: this.owner,
+        repo: this.repo,
+        run_id: runId,
+      });
 
-      return Buffer.from(response.data);
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 410) {
+      // The response data is already an ArrayBuffer
+      if (response.data instanceof ArrayBuffer) {
+        return Buffer.from(response.data);
+      }
+
+      // Handle case where data might be a different format
+      return Buffer.from(response.data as any);
+    } catch (error: any) {
+      if (error.status === 410) {
         // Logs have been deleted (common for old runs)
         console.warn(`Logs for run ${runId} are no longer available`);
       } else {

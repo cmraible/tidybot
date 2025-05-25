@@ -46,7 +46,7 @@
   },
   "dependencies": {
     "adm-zip": "^0.5.16",
-    "axios": "^1.9.0",
+    "@octokit/rest": "^21.0.2",
     "chalk": "^5.4.1",
     "commander": "^14.0.0",
     "ora": "^8.2.0"
