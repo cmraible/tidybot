@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import ora from 'ora';
 import { GitHubClient } from '../lib/github-client';
 import { FlakyTestAnalyzer } from '../lib/analyzer';
+import { LogParser } from '../lib/log-parser';
 import { formatTable } from '../utils/table-formatter';
 import { formatJSON } from '../utils/json-formatter';
 
@@ -55,41 +56,62 @@ export async function analyzeCommand(repository: string, options: AnalyzeOptions
       return;
     }
 
-    // Initialize analyzer
+    // Initialize analyzer and parser
     const analyzer = new FlakyTestAnalyzer();
+    const parser = new LogParser();
 
-    // For now, we'll simulate test failures since log parsing isn't implemented yet
-    // TODO: Implement actual log parsing
-    spinner.warn('Log parsing not yet implemented. Using simulated data for demo.');
+    spinner.text = `Analyzing logs from ${failedRuns.length} failed runs...`;
 
-    // Simulate some test failures for demonstration
-    const simulatedTests = [
-      'ReactDOMServer-test.js › ReactDOMServer › should handle context correctly',
-      'ReactSuspense-test.internal.js › ReactSuspense › should suspend when data is not ready',
-      'ReactHooks-test.internal.js › ReactHooks › useState › should handle state updates',
-      'ReactConcurrent-test.js › Concurrent Mode › should render without tearing',
-    ];
-
-    // Add simulated failures
+    // Process each failed run
+    let processedRuns = 0;
+    let skippedRuns = 0;
     for (const failedRun of failedRuns) {
-      for (let i = 0; i < 2; i++) {
-        const testName = simulatedTests[Math.floor(Math.random() * simulatedTests.length)];
-        analyzer.addFailure({
-          testName: testName || 'Unknown test',
-          testFile: testName?.split(' › ')[0] || 'unknown.test.js',
-          errorMessage: 'Timeout: Test exceeded 5000ms',
-          workflowRunId: failedRun.id,
-          commitSha: failedRun.head_sha,
-          timestamp: failedRun.created_at,
-          branch: failedRun.head_branch,
-        });
+      processedRuns++;
+      spinner.text = `Analyzing logs (${processedRuns}/${failedRuns.length})...`;
+
+      // Fetch logs
+      const logBuffer = await client.getWorkflowRunLogs(failedRun.id);
+      if (!logBuffer) {
+        skippedRuns++;
+        continue;
       }
+
+      // Extract logs from zip
+      const logs = await parser.extractLogsFromZip(logBuffer);
+
+      // Parse test failures from all log files
+      for (const logContent of logs) {
+        const failures = parser.parseTestFailures(
+          logContent,
+          failedRun.id,
+          failedRun.head_sha,
+          failedRun.created_at,
+          failedRun.head_branch
+        );
+
+        // Add failures to analyzer
+        for (const failure of failures) {
+          analyzer.addFailure(failure);
+        }
+      }
+    }
+
+    if (skippedRuns > 0) {
+      spinner.warn(
+        `Analyzed ${processedRuns - skippedRuns} runs (${skippedRuns} skipped due to access restrictions)`
+      );
+      console.log(
+        chalk.yellow(
+          '\n⚠️  Note: Some workflow logs require authentication to access.\n' +
+            '   For full access, set GITHUB_TOKEN environment variable or use repos you have admin access to.\n'
+        )
+      );
+    } else {
+      spinner.succeed(`Analyzed ${processedRuns} workflow runs`);
     }
 
     // Analyze and get flaky tests
     const flakyTests = analyzer.analyze(workflowRuns.length);
-
-    spinner.stop();
 
     // Output results
     if (flakyTests.length === 0) {

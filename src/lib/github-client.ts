@@ -30,21 +30,27 @@ export class GitHubClient {
     return response.data.workflow_runs;
   }
 
-  async getWorkflowRunLogs(runId: number): Promise<string> {
+  async getWorkflowRunLogs(runId: number): Promise<Buffer | null> {
     try {
-      await this.client.get(`/repos/${this.owner}/${this.repo}/actions/runs/${runId}/logs`, {
-        responseType: 'arraybuffer',
-        headers: {
-          Accept: 'application/vnd.github.v3+json',
-        },
-      });
+      const response = await this.client.get(
+        `/repos/${this.owner}/${this.repo}/actions/runs/${runId}/logs`,
+        {
+          responseType: 'arraybuffer',
+          headers: {
+            Accept: 'application/vnd.github.v3+json',
+          },
+        }
+      );
 
-      // GitHub returns logs as a zip file
-      // TODO: Implement zip extraction and log parsing
-      return '';
+      return Buffer.from(response.data);
     } catch (error) {
-      console.error(`Failed to fetch logs for run ${runId}:`, error);
-      return '';
+      if (axios.isAxiosError(error) && error.response?.status === 410) {
+        // Logs have been deleted (common for old runs)
+        console.warn(`Logs for run ${runId} are no longer available`);
+      } else {
+        console.error(`Failed to fetch logs for run ${runId}:`, error);
+      }
+      return null;
     }
   }
 }
