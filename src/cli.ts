@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import chalk from 'chalk';
 import { version } from '../package.json';
+import { analyzeCommand } from './commands/analyze';
 
 const program = new Command();
 
@@ -16,10 +16,6 @@ program
   .argument('<repository>', 'GitHub repository in format owner/repo')
   .option('-d, --days <number>', 'Number of days to analyze', '30')
   .option('-o, --output <format>', 'Output format (json|table)', 'table')
-  .action(async (repository: string, options) => {
-    console.log(chalk.blue(`Analyzing ${repository} for flaky tests...`));
-    console.log(`Options:`, options);
-    // TODO: Implement analyze command
-  });
+  .action(analyzeCommand);
 
 program.parse();
