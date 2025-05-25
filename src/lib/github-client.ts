@@ -1,5 +1,4 @@
 import { Octokit } from '@octokit/rest';
-import type { RestEndpointMethodTypes } from '@octokit/rest';
 import { WorkflowRun } from '../types';
 
 export class GitHubClient {
@@ -26,17 +25,19 @@ export class GitHubClient {
     });
 
     // Map Octokit response to our WorkflowRun interface
-    return response.data.workflow_runs.map((run): WorkflowRun => ({
-      id: run.id,
-      name: run.name || '',
-      head_branch: run.head_branch || '',
-      head_sha: run.head_sha,
-      status: run.status || '',
-      conclusion: run.conclusion,
-      created_at: run.created_at,
-      updated_at: run.updated_at,
-      html_url: run.html_url,
-    }));
+    return response.data.workflow_runs.map(
+      (run): WorkflowRun => ({
+        id: run.id,
+        name: run.name || '',
+        head_branch: run.head_branch || '',
+        head_sha: run.head_sha,
+        status: run.status || '',
+        conclusion: run.conclusion,
+        created_at: run.created_at,
+        updated_at: run.updated_at,
+        html_url: run.html_url,
+      })
+    );
   }
 
   async getWorkflowRunLogs(runId: number): Promise<Buffer | null> {
@@ -51,7 +52,7 @@ export class GitHubClient {
       if (response.data instanceof ArrayBuffer) {
         return Buffer.from(response.data);
       }
-      
+
       // Handle case where data might be a different format
       return Buffer.from(response.data as any);
     } catch (error: any) {
