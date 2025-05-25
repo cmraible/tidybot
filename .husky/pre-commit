@@ -1,0 +1,37 @@
+#!/bin/sh
+
+# Run lint-staged for formatting and linting on staged files
+pnpm lint-staged
+
+# Run full checks like CI does
+echo "Running pre-commit checks..."
+
+echo "1. Type checking..."
+pnpm run typecheck
+if [ $? -ne 0 ]; then
+  echo "❌ Type checking failed"
+  exit 1
+fi
+
+echo "2. Linting..."
+pnpm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed"
+  exit 1
+fi
+
+echo "3. Running tests..."
+pnpm run test run
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed"
+  exit 1
+fi
+
+echo "4. Building..."
+pnpm run build
+if [ $? -ne 0 ]; then
+  echo "❌ Build failed"
+  exit 1
+fi
+
+echo "✅ All pre-commit checks passed!"
