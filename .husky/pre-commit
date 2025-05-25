@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Run lint-staged for formatting and linting on staged files
-pnpm lint-staged
-
 # Run full checks like CI does
 echo "Running pre-commit checks..."
 
