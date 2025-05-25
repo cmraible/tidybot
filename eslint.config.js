@@ -14,29 +14,29 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        project: './tsconfig.json'
+        project: './tsconfig.json',
       },
       globals: {
         console: 'readonly',
         process: 'readonly',
         Buffer: 'readonly',
         __dirname: 'readonly',
-        __filename: 'readonly'
-      }
+        __filename: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': typescript,
-      prettier: prettierPlugin
+      prettier: prettierPlugin,
     },
     rules: {
       ...typescript.configs.recommended.rules,
       'prettier/prettier': 'error',
       '@typescript-eslint/explicit-function-return-type': 'off',
       '@typescript-eslint/no-explicit-any': 'warn',
-      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }]
-    }
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    },
   },
   {
-    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.ts']
-  }
+    ignores: ['dist/', 'node_modules/', '*.config.js', '*.config.ts'],
+  },
 ];

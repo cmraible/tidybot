@@ -10,7 +10,7 @@ export default defineConfig({
   target: 'node18',
   esbuildOptions(options) {
     options.banner = {
-      js: '#!/usr/bin/env node'
+      js: '#!/usr/bin/env node',
     };
-  }
+  },
 });
